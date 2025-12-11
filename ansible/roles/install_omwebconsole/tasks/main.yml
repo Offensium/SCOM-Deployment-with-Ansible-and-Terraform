@@ -1,0 +1,59 @@
+---
+- name: Enable update service
+  ansible.windows.win_service:
+    name: Windows Update
+    state: started
+    start_mode: auto
+
+- name: Install Windows Features
+  ansible.windows.win_feature:
+    name:
+      - NET-WCF-HTTP-Activation45
+      - Web-Static-Content
+      - Web-Default-Doc
+      - Web-Dir-Browsing
+      - Web-Http-Errors
+      - Web-Http-Logging
+      - Web-Request-Monitor
+      - Web-Filtering
+      - Web-Stat-Compression
+      - Web-Mgmt-Console
+      - Web-Metabase
+      - Web-Asp-Net
+      - Web-Windows-Auth
+    state: present
+  register: feature_install
+
+- name: Reboot the server if features were installed or changed
+  ansible.windows.win_reboot:
+  when: feature_install.changed
+
+- name: Add SCOMAdmins Group as Local Administrator
+  ansible.windows.win_group_membership:
+    name: Administrators
+    members:
+      - '{{ domain_netbios_name }}\{{ scom_admin_group }}'
+    state: present
+
+- name: Download SCOM Setup
+  ansible.builtin.include_tasks:
+    file: download_file.yml
+  vars:
+    scom_file_name: SCOM_2022.exe
+    scom_url: "{{ scom_2022_url }}"
+
+- name: Extract SCOM Setup Files
+  ansible.windows.win_shell: |
+    {{ scom_host_path }}\SCOM_2022.exe /Silent
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\System Center Operations Manager 2022\\Setup.exe"
+
+- name: Begin OMWebConsole Install
+  ansible.builtin.include_tasks:
+    file: install.yml

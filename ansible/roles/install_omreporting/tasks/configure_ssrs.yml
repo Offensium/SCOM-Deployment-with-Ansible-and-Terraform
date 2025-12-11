@@ -1,0 +1,154 @@
+---
+- name: Install NuGet provider
+  ansible.windows.win_powershell:
+    script: |
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  ignore_errors: true
+
+- name: Install ReportingServicesTools module
+  ansible.windows.win_powershell:
+    script: |
+      if (-not (Get-Module -ListAvailable -Name ReportingServicesTools)) {
+        Install-Module -Name ReportingServicesTools -Force -Confirm:$false
+      }
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  ignore_errors: true
+
+- name: Connect to SSRS Report Server and Set URL Reservation and Database
+  ansible.windows.win_powershell:
+    script: |
+      Import-Module ReportingServicesTools
+      $netbiosName = $env:COMPUTERNAME
+      try {
+        Connect-RsReportServer -ComputerName $netbiosName -ReportServerInstance "SSRS" -ReportServerVersion 15
+        $reservedUrl = "http://+:80/Reports/"
+        $escapedUrl = [regex]::Escape($reservedUrl)
+        $reservationExists = netsh http show urlacl | Select-String -Pattern $escapedUrl
+        if (-not $reservationExists) {
+          Set-RsDatabase -DatabaseServerName $netbiosName -Name ReportServer -DatabaseCredentialType ServiceAccount -Confirm:$false
+          Set-RsUrlReservation
+        }
+        Write-Output "Success"
+      } catch {
+        Write-Output "Error"
+        throw
+      }
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  register: ssrs_result
+  until: ssrs_result.failed == false
+  retries: 3
+  delay: 60
+
+# https://learn.microsoft.com/en-us/troubleshoot/system-center/scom/cannot-deploy-operations-manager-reports
+- name: Set AllowedResourceExtensionsForUpload
+  ansible.windows.win_powershell:
+    script: |
+      $ServiceAddress = 'http://localhost'
+
+      $ExtensionAdd = @(
+        '*'
+        'CustomConfiguration'
+        'Report'
+        'AvailabilityMonitor'
+        'TopNApplications'
+        'Settings'
+        'License'
+        'ServiceLevelTrackingSummary'
+        'CustomPerformance'
+        'MostCommonEvents'
+        'PerformanceTop'
+        'Detail'
+        'DatabaseSettings'
+        'ServiceLevelObjectiveDetail'
+        'PerformanceDetail'
+        'ConfigurationChange'
+        'TopNErrorGroupsGrowth'
+        'AvailabilityTime'
+        'rpdl'
+        'mp'
+        'TopNErrorGroups'
+        'Downtime'
+        'TopNApplicationsGrowth'
+        'DisplayStrings'
+        'Space'
+        'Override'
+        'Performance'
+        'AlertDetail'
+        'ManagementPackODR'
+        'AlertsPerDay'
+        'EventTemplate'
+        'ManagementGroup'
+        'Alert'
+        'EventAnalysis'
+        'MostCommonAlerts'
+        'Availability'
+        'AlertLoggingLatency'
+        'PerformanceTopInstance'
+        'rdl'
+        'PerformanceBySystem'
+        'InstallUpdateScript'
+        'PerformanceByUtilization'
+        'DropScript'
+      )
+
+      Write-Output 'Setting Allowed Resource Extensions for Upload'
+      $error.clear()
+      try
+      {
+        $Uri = [System.Uri]"$ServiceAddress/ReportServer/ReportService2010.asmx"
+        $Proxy = New-WebServiceProxy -Uri $Uri -UseDefaultCredential
+        $Type = $Proxy.GetType().Namespace + '.Property'
+        
+        $Property = New-Object -TypeName $Type
+        $Property.Name = 'AllowedResourceExtensionsForUpload'
+
+      $ValueAdd = $ExtensionAdd | ForEach-Object -Process {
+          "*.$psItem"
+        }
+
+      $Current = $Proxy.GetSystemProperties($Property)
+        if ($Current)
+          {
+        $ValueCurrent = $Current.Value -split ','
+        $ValueSet = $ValueCurrent + $ValueAdd | Sort-Object -Unique
+        }
+        else
+          {
+              $ValueSet = $ValueAdd | Sort-Object -Unique
+          }
+
+      $Property.Value = $ValueSet -join ','
+        
+        $Proxy.SetSystemProperties($Property)
+          Write-Output '  Successfully set property to: *.*'
+      }
+      catch
+      {
+        Write-Warning "Failure occurred: $error"
+      }
+      Write-Output 'Script completed!'
+
+      Restart-Service -Name "SQLServerReportingServices" -Force
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  ignore_errors: true

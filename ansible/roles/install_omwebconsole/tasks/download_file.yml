@@ -1,0 +1,17 @@
+- name: Ensure remote directory exists on Windows host
+  ansible.windows.win_file:
+    path: "{{ scom_host_path }}"
+    state: directory
+
+- name: Check if file already exists on Windows host
+  ansible.windows.win_stat:
+    path: '{{ scom_host_path }}\{{ scom_file_name }}'
+  register: file_host_check
+
+- name: Download file directly to Windows host if missing
+  ansible.windows.win_get_url:
+    url: "{{ scom_url }}"
+    dest: '{{ scom_host_path }}\{{ scom_file_name }}'
+    checksum: "{{ scom_checksum | default(omit) }}"
+    force: no              
+  when: not file_host_check.stat.exists

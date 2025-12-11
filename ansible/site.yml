@@ -1,0 +1,47 @@
+
+- name: Disable Firewall on all SCOM Servers
+  hosts: all
+  gather_facts: false
+  roles:
+    - disable_firewall
+
+- name: Configure Domain Controller (DC)
+  hosts: domain_controllers
+  gather_facts: false
+  roles:
+     - install_ad_ds
+     - create_scom_accounts
+
+- name: Disable Firewall on all SCOM Servers
+  hosts: all, !domain_controllers
+  gather_facts: false
+  roles:
+    - join_ad_ds
+
+- name: Configure Database & Data Warehouse servers
+  hosts: database_servers
+  gather_facts: false
+  roles:
+     - install_db
+
+- name: Configure Operations Manager Primary (OM1)
+  hosts: operations_manager_server_primary
+  gather_facts: false
+  roles:
+    - install_omserver
+    - install_omconsole
+    - install_omwebconsole
+    - deploy_agents
+
+- name: Configure Operations Manager Additional (OM2)
+  hosts: operations_manager_server_additional
+  gather_facts: false
+  roles:
+     - install_additional_omserver
+     - install_omconsole
+
+- name: Configure Reporting Server (runs last since it depends on OM1)
+  hosts: reporting_servers
+  gather_facts: false
+  roles: 
+     - install_omreporting

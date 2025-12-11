@@ -1,0 +1,6 @@
+---
+scom_2022_url: https://download.microsoft.com/download/4/8/d/48da839e-0317-49ed-8c6a-ae534e598db2/SCOM_2022.exe?culture=en-us&country=US
+
+scom_omconsole_enable_error_reporting: Never    
+scom_omconsole_send_ceip_reports: 0    
+scom_omconsole_use_microsoft_update: 0   

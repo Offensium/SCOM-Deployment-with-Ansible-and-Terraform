@@ -1,0 +1,19 @@
+---
+- name: Download SSRS Setup if Needed
+  ansible.builtin.include_tasks:
+    file: download_file.yml
+  vars:
+    scom_file_name: SQLServerReportingServices.exe
+    scom_url: "{{ ssrs_url }}"
+
+- name: Install SSRS 
+  ansible.windows.win_shell: |
+    {{ scom_host_path }}\SQLServerReportingServices.exe /IAcceptLicenseTerms /quiet /Edition=Eval
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\Program Files\\Microsoft SQL Server Reporting Services\\Shared Tools\\RSConfigTool.exe"

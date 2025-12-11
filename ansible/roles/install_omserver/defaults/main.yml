@@ -1,0 +1,28 @@
+---
+scom_2022_url: https://download.microsoft.com/download/4/8/d/48da839e-0317-49ed-8c6a-ae534e598db2/SCOM_2022.exe?culture=en-us&country=US
+
+#OMServer Vars
+scom_omserver_use_local_system_action_account: true
+scom_omserver_use_local_system_das_account: true
+scom_omserver_enable_error_reporting: Never        
+scom_omserver_send_ceip_reports: 0                 
+scom_omserver_use_microsoft_update: 0 
+
+# Databases
+scom_db_server: scom-db
+scom_dw_server: scom-db
+
+#Global Vars
+scom_management_server: scom-om1 
+scom_admin_group: SCOMAdmins
+scom_management_group_name: SCOM1
+scom_action_account_username: opsmgr_action
+scom_action_account_password: Password123
+scom_data_access_account: opsmgr_das
+scom_data_access_password: Password123
+scom_reader_account: opsmgr_dataread
+scom_reader_password: Password123
+scom_writer_account: opsmgr_datawrite
+scom_writer_password: Password123
+scom_sql_account: opsmgr_sqlsvc
+scom_sql_password: Password123

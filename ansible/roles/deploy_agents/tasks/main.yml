@@ -1,0 +1,116 @@
+---
+# Confirm if specified user exists in AD
+- name: Ensure the RSAT-AD-PowerShell Module is Installed
+  ansible.windows.win_feature:
+    name:
+      - RSAT-AD-PowerShell
+    state: present
+
+- name: Ensure SCOM Push Account Exists
+  microsoft.ad.user:
+    name: '{{ scom_push_install_account }}'
+    password: '{{ scom_push_install_password }}'
+    state: present
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+
+# Grant user Logon As Service if Needed
+- name: Install NuGet provider
+  ansible.windows.win_powershell:
+    script: |
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  ignore_errors: yes
+
+- name: Install Carbon module
+  ansible.windows.win_powershell:
+    script: |
+      if (-not (Get-Module -ListAvailable -Name Carbon)) {
+        Install-Module -Name Carbon -Force -Confirm:$false
+      }
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  ignore_errors: yes
+
+- name: Grant Push Account Logon As a Service to Management Server
+  ansible.windows.win_shell: | 
+    Import-Module -Name Carbon -Global -Prefix CA
+
+    $UserName = "{{ domain_netbios_name }}\{{ scom_push_install_account }}"
+
+    [array]$UserPrivileges = Get-CAPrivileges -Identity $UserName;
+    [bool]$LogOnAsAServiceprivilegeFound = $false;
+
+    if ($UserPrivileges.Length > 0)
+    {
+        if ($UserPrivileges -contains "SeServiceLogonRight")
+        {
+            $LogOnAsAServiceprivilegeFound = $true;
+        }
+    }
+
+    if ($LogOnAsAServiceprivilegeFound -eq $false)
+    {
+        Grant-CPrivilege -Identity $UserName "SeServiceLogonRight"
+    } 
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+
+# Set User as local Admin over the target host
+- name: Grant Push Account Local Admin Over Target Host(s)
+  ansible.windows.win_shell: |
+    Invoke-Command -ComputerName "{{ item }}" -ScriptBlock {
+      net localgroup Administrators "{{ domain_netbios_name }}\{{ scom_push_install_account }}" /add
+    } 
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  loop: "{{ scom_deploy_agent_hostnames }}"
+  ignore_errors: true
+
+#Install SCOM Agent
+- name: Install SCOM Agents on Target Host(s)
+  ansible.windows.win_shell: |
+    Import-Module OperationsManager
+ 
+    $TargetHostName = "{{ item }}"
+    $Agent = Get-SCOMAgent -DNSHostName $TargetHostName
+    $Username = "{{ domain_netbios_name }}\{{ scom_push_install_account }}"  
+    $Password = ConvertTo-SecureString "{{ scom_push_install_password }}" -AsPlainText -Force 
+    $FQDN = [System.Net.Dns]::GetHostEntry("localhost").HostName
+    $InstallAccount = New-Object System.Management.Automation.PSCredential($Username, $Password)
+    $PrimaryMgmtServer = Get-SCOMManagementServer -ComputerName $FQDN | Select-Object -First 1
+
+    if ($null -ne $Agent) {
+        Write-Host "SCOM Agent is already installed on $TargetHostName."
+    } else {
+        Install-SCOMAgent -DNSHostName "{{ item }}" -PrimaryManagementServer $PrimaryMgmtServer -ActionAccount $InstallAccount
+    }
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  loop: "{{ scom_deploy_agent_hostnames }}"
+  

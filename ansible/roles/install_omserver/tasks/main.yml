@@ -1,0 +1,17 @@
+---
+- name: Enable update service
+  ansible.windows.win_service:
+    name: Windows Update
+    state: started
+    start_mode: auto
+
+- name: Add SCOMAdmins Group as Local Administrator
+  ansible.windows.win_group_membership:
+    name: Administrators
+    members:
+      - '{{ domain_netbios_name }}\{{ scom_admin_group }}'
+    state: present
+
+- name: Begin OMServer Install
+  ansible.builtin.include_tasks:
+    file: install.yml

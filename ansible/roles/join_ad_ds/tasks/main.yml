@@ -1,0 +1,18 @@
+- name: Set DNS Server to Domain Controller IP
+  ansible.windows.win_dns_client:
+    adapter_names: '*'
+    dns_servers: "{{ dns_server }}"
+
+- name: "Join Domain"
+  microsoft.ad.membership:
+    dns_domain_name: "{{ domain_fqdn }}"
+    hostname: "{{ hostname }}"
+    domain_admin_user: '{{ domain_netbios_name }}\{{ domain_admin_username }}'
+    domain_admin_password: "{{ domain_admin_password }}"
+    state: domain
+    reboot: true
+  register: domain_install
+
+- name: Reboot host if install requires it
+  ansible.windows.win_reboot:
+  when: domain_install.reboot_required

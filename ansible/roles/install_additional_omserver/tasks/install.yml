@@ -1,0 +1,154 @@
+---
+- name: Download SCOM Setup if Needed
+  ansible.builtin.include_tasks:
+    file: download_file.yml
+  vars:
+    scom_file_name: SCOM_2022.exe
+    scom_url: "{{ scom_2022_url }}"
+
+- name: Extract SCOM Setup Files if Needed
+  ansible.windows.win_shell: |
+    {{ scom_host_path }}\SCOM_2022.exe /Silent
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\System Center Operations Manager 2022\\Setup.exe"
+
+- name: Install Additional OMServer With Domain Action and Domain DAS Accounts
+  ansible.windows.win_shell: |
+    Start-Process -FilePath "C:\System Center Operations Manager 2022\Setup.exe" -ArgumentList @(
+      "/silent",
+      "/install",
+      "/components:OMServer",
+      "/SqlServerInstance:{{ scom_db_server }}.{{ domain_fqdn }}",
+      "/SqlInstancePort:1433",
+      "/DatabaseName:OperationsManager",
+      "/ActionAccountUser:{{ domain_netbios_name }}\{{ scom_action_account_username }}",
+      "/ActionAccountPassword:{{ scom_action_account_password }}",
+      "/DASAccountUser:{{ domain_netbios_name }}\{{ scom_data_access_account }}",
+      "/DASAccountPassword:{{ scom_data_access_password }}",
+      "/DataReaderUser:{{ domain_netbios_name }}\{{ scom_reader_account }}",
+      "/DataReaderPassword:{{ scom_reader_password }}",
+      "/DataWriterUser:{{ domain_netbios_name }}\{{ scom_writer_account }}",
+      "/DataWriterPassword:{{ scom_writer_password }}",
+      "/EnableErrorReporting:{{ scom_omserver_enable_error_reporting }}",
+      "/SendCEIPReports:{{ scom_omserver_send_ceip_reports}}",
+      "/UseMicrosoftUpdate:{{ scom_omserver_use_microsoft_update }}",
+      "/AcceptEndUserLicenseAgreement:1"
+    ) -NoNewWindow -Wait
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\Program Files\\Microsoft System Center\\Operations Manager\\Server\\XmlStringToDataItemModule.dll"
+  when: 
+    - not scom_omserver_use_local_system_action_account | bool
+    - not scom_omserver_use_local_system_das_account | bool
+
+- name: Install Additional OMServer with Local System Action Account and Local System DAS Account
+  ansible.windows.win_shell: |
+    Start-Process -FilePath "C:\System Center Operations Manager 2022\Setup.exe" -ArgumentList @(
+      "/silent",
+      "/install",
+      "/components:OMServer",
+      "/ManagementGroupName:{{ scom_management_group_name }}",
+      "/SqlServerInstance:{{ scom_db_server }}.{{ domain_fqdn }}",
+      "/SqlInstancePort:1433",
+      "/DatabaseName:OperationsManager",
+      "/UseLocalSystemActionAccount", 
+      "/UseLocalSystemDASAccount",
+      "/DataReaderUser:{{ domain_netbios_name }}\{{ scom_reader_account }}",
+      "/DataReaderPassword:{{ scom_reader_password }}",
+      "/DataWriterUser:{{ domain_netbios_name }}\{{ scom_writer_account }}",
+      "/DataWriterPassword:{{ scom_writer_password }}",
+      "/EnableErrorReporting:{{ scom_omserver_enable_error_reporting }}",
+      "/SendCEIPReports:{{ scom_omserver_send_ceip_reports}}",
+      "/UseMicrosoftUpdate:{{ scom_omserver_use_microsoft_update }}",
+      "/AcceptEndUserLicenseAgreement:1"
+    ) -NoNewWindow -Wait
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\Program Files\\Microsoft System Center\\Operations Manager\\Server\\XmlStringToDataItemModule.dll"
+  when: 
+    - scom_omserver_use_local_system_action_account | bool
+    - scom_omserver_use_local_system_das_account | bool
+
+- name: Install Additional OMServer with Domain Action Account and Local System DAS Account
+  ansible.windows.win_shell: |
+    Start-Process -FilePath "C:\System Center Operations Manager 2022\Setup.exe" -ArgumentList @(
+      "/silent",
+      "/install",
+      "/components:OMServer",
+      "/ManagementGroupName:{{ scom_management_group_name }}",
+      "/SqlServerInstance:{{ scom_db_server }}.{{ domain_fqdn }}",
+      "/SqlInstancePort:1433",
+      "/DatabaseName:OperationsManager",
+      "/ActionAccountUser:{{ domain_netbios_name }}\{{ scom_action_account_username }}",
+      "/ActionAccountPassword:{{ scom_action_account_password }}",
+      "/UseLocalSystemDASAccount",
+      "/DataReaderUser:{{ domain_netbios_name }}\{{ scom_reader_account }}",
+      "/DataReaderPassword:{{ scom_reader_password }}",
+      "/DataWriterUser:{{ domain_netbios_name }}\{{ scom_writer_account }}",
+      "/DataWriterPassword:{{ scom_writer_password }}",
+      "/EnableErrorReporting:{{ scom_omserver_enable_error_reporting }}",
+      "/SendCEIPReports:{{ scom_omserver_send_ceip_reports}}",
+      "/UseMicrosoftUpdate:{{ scom_omserver_use_microsoft_update }}",
+      "/AcceptEndUserLicenseAgreement:1"
+    ) -NoNewWindow -Wait
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\Program Files\\Microsoft System Center\\Operations Manager\\Server\\XmlStringToDataItemModule.dll"
+  when: 
+    - not scom_omserver_use_local_system_action_account | bool
+    - scom_omserver_use_local_system_das_account | bool
+
+- name: Install Additional OMServer with Local System Action Account and Domain DAS Account
+  ansible.windows.win_shell: |
+    Start-Process -FilePath "C:\System Center Operations Manager 2022\Setup.exe" -ArgumentList @(
+      "/silent",
+      "/install",
+      "/components:OMServer",
+      "/ManagementGroupName:{{ scom_management_group_name }}",
+      "/SqlServerInstance:{{ scom_db_server }}.{{ domain_fqdn }}",
+      "/SqlInstancePort:1433",
+      "/DatabaseName:OperationsManager",
+      "/UseLocalSystemActionAccount", 
+      "/DASAccountUser:{{ domain_netbios_name }}\{{ scom_data_access_account }}",
+      "/DASAccountPassword:{{ scom_data_access_password }}",
+      "/DataReaderUser:{{ domain_netbios_name }}\{{ scom_reader_account }}",
+      "/DataReaderPassword:{{ scom_reader_password }}",
+      "/DataWriterUser:{{ domain_netbios_name }}\{{ scom_writer_account }}",
+      "/DataWriterPassword:{{ scom_writer_password }}",
+      "/EnableErrorReporting:{{ scom_omserver_enable_error_reporting }}",
+      "/SendCEIPReports:{{ scom_omserver_send_ceip_reports}}",
+      "/UseMicrosoftUpdate:{{ scom_omserver_use_microsoft_update }}",
+      "/AcceptEndUserLicenseAgreement:1"
+    ) -NoNewWindow -Wait
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\Program Files\\Microsoft System Center\\Operations Manager\\Server\\XmlStringToDataItemModule.dll"
+  when: 
+    - scom_omserver_use_local_system_action_account | bool
+    - not scom_omserver_use_local_system_das_account | bool

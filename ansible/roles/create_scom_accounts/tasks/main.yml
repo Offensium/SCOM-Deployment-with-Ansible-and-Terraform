@@ -1,0 +1,46 @@
+---
+- name: Create Domain Users Needed for SCOM
+  microsoft.ad.user:
+    name: '{{ user_creation.name }}'
+    password: '{{ user_creation.password }}'
+    state: present
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  loop:
+    - { name: '{{ scom_action_account_username }}',
+        password: '{{ scom_action_account_password }}'
+    }
+    - { name: '{{ scom_data_access_account }}',
+        password: '{{ scom_data_access_password }}'
+    }
+    - { name: '{{ scom_reader_account }}',
+        password: '{{ scom_reader_password }}'
+    }
+    - { name: '{{ scom_writer_account }}',
+        password: '{{ scom_writer_password }}'
+    }
+    - { name: '{{ scom_sql_account }}',
+        password: '{{ scom_sql_password }}'
+    }
+  loop_control:
+    loop_var: user_creation
+
+- name: Create SCOM Admins Group
+  microsoft.ad.group:
+    identity: '{{ scom_admin_group }}'
+    scope: domainlocal
+    members: 
+      add:
+        - '{{ scom_action_account_username }}'
+        - '{{ scom_data_access_account }}'
+        - '{{ domain_admin }}'
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"

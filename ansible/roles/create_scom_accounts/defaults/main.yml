@@ -1,0 +1,13 @@
+---
+scom_action_account_username: opsmgr_action               
+scom_action_account_password: Password123
+scom_data_access_account: opsmgr_das
+scom_data_access_password: Password123             
+scom_reader_account: opsmgr_dataread
+scom_reader_password: Password123
+scom_writer_account: opsmgr_datawrite
+scom_writer_password: Password123
+scom_sql_account: opsmgr_sqlsvc
+scom_sql_password: Password123
+
+scom_admin_group: SCOMAdmins

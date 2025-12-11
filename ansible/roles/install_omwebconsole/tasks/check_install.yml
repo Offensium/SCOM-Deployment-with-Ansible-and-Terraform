@@ -1,0 +1,19 @@
+---
+- name: Check if the installation files are present
+  ansible.windows.win_shell: |
+    if (Test-Path "C:\Program Files\Microsoft System Center\Operations Manager\WebConsole\WebLocalizationStrings.dll") {
+      exit 0
+    } else {
+      exit 1
+    }
+  register: install_status
+  ignore_errors: true
+
+- name: OMWebConsole Installation Not Found, Waiting 3 min and Retrying...
+  ansible.builtin.pause:
+    seconds: 180
+  when: install_status.rc != 0
+
+- name: Retrying OMWebConsole Install
+  include_tasks: install.yml
+  when: install_status.rc != 0

@@ -1,0 +1,118 @@
+all:
+  vars:
+    # Update these with your Windows admin/WinRM settings
+    ansible_user: azureuser
+    ansible_password: P@ssw0rd1234!
+    ansible_connection: winrm
+    ansible_port: '5985'
+    ansible_winrm_transport: ntlm
+    ansible_winrm_server_cert_validation: ignore
+    range_id: "R01"    # keep or override when running
+    domain_fqdn: offensium.local
+    
+    default_user_password: Password123
+    domain_admin: offensium
+    domain_admin_username: offensium
+    domain_admin_password: P@ssw0rd1234!
+    domain_netbios_name: OFFENSIUM
+    dns_server: '<DOMAIN_CONTROLLER_LAN_IP>'
+    scom_host_path: 'C:\scomInstall'
+
+    # Download URLs
+    ssrs_url: https://download.microsoft.com/download/1/a/a/1aaa9177-3578-4931-b8f3-373b24f63342/SQLServerReportingServices.exe
+    scom_2022_url: https://download.microsoft.com/download/4/8/d/48da839e-0317-49ed-8c6a-ae534e598db2/SCOM_2022.exe?culture=en-us&country=US
+    scom_ssms_url: https://download.microsoft.com/download/9/b/e/9bee9f00-2ee2-429a-9462-c9bc1ce14c28/SSMS-Setup-ENU.exe
+    scom_sql2022_url: https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU.iso
+
+    #OMServer Vars
+    scom_omserver_use_local_system_action_account: true
+    scom_omserver_use_local_system_das_account: true
+    scom_omserver_enable_error_reporting: Never        
+    scom_omserver_send_ceip_reports: 0                 
+    scom_omserver_use_microsoft_update: 0 
+
+    # Databases
+    scom_db_server: scom-db
+    scom_dw_server: scom-db
+
+    # SCOM management
+    scom_management_server: scom-om1 
+    scom_admin_group: SCOMAdmins
+    scom_management_group_name: SCOM1
+
+    #OMWebConsole Vars
+    scom_omwebconsole_authorization_mode: Mixed  
+    scom_omwebconsole_enable_error_reporting: Never 
+    scom_omwebconsole_send_ceip_reports: 0             
+    scom_omwebconsole_use_microsoft_update: 0    
+
+    #Action Account
+    scom_action_account_username: opsmgr_action
+    scom_action_account_password: Password123
+
+    #Data Access Service Account
+    scom_data_access_account: opsmgr_das
+    scom_data_access_password: Password123
+
+    #Data Warehouse Reader Account
+    scom_reader_account: opsmgr_dataread
+    scom_reader_password: Password123
+
+    #Data Warehouse Writer Account
+    scom_writer_account: opsmgr_datawrite
+    scom_writer_password: Password123
+
+    #SQL Service Account
+    scom_sql_account: opsmgr_sqlsvc
+    scom_sql_password: Password123
+
+    #OMReporting Vars
+    scom_omreporting_send_odr_reports: 0      # [0|1]
+    scom_omreporting_use_microsoft_update: 0  # [0|1]
+
+    #OMConsole Vars
+    scom_omconsole_enable_error_reporting: Never    
+    scom_omconsole_send_ceip_reports: 0    
+    scom_omconsole_use_microsoft_update: 0   
+  
+    scom_deploy_agent_hostnames:
+      - dc01.offensium.local
+      - scom-db.offensium.local
+      - scom-dw.offensium.local
+      - scom-reporting.offensium.local
+
+  children:
+    domain_controllers:
+      hosts:
+        dc01.offensium.local:
+          ansible_host: <Terraform Public IP>
+          hostname: DC01
+          private_ip: <Teraform LAN IP>
+    database_servers:
+      hosts:
+        scom-db.offensium.local:
+          ansible_host: <Terraform Public IP>
+          hostname: scom-db
+          private_ip: <Teraform LAN IP>
+        scom-dw.offensium.local:
+          ansible_host: <Terraform Public IP>
+          hostname: scom-dw
+          private_ip: <Teraform LAN IP>
+    operations_manager_server_primary:
+      hosts:
+        scom-om1.offensium.local:
+          ansible_host: <Terraform Public IP>
+          hostname: scom-om1
+          private_ip: <Teraform LAN IP>
+    operations_manager_server_additional:
+      hosts:
+        scom-om2.offensium.local:
+          ansible_host: <Terraform Public IP>
+          hostname: scom-om2
+          private_ip: <Teraform LAN IP>
+    reporting_servers:
+      hosts:
+        scom-reporting.offensium.local:
+          ansible_host: <Terraform Public IP>
+          hostname: scom-reporting
+          private_ip: <Teraform LAN IP>

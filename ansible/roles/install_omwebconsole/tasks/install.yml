@@ -1,0 +1,27 @@
+---
+- name: Install OMWebConsole
+  ansible.windows.win_shell: |
+    Start-Process -FilePath "C:\System Center Operations Manager 2022\Setup.exe" -ArgumentList @(
+      "/silent",
+      "/install",
+      "/components:OMWebConsole",
+      "/ManagementServer: {{ scom_management_server }}.{{ domain_fqdn }}",
+      "/WebSiteName:Default Web Site",
+      "/WebConsoleAuthorizationMode:{{ scom_omwebconsole_authorization_mode }}",
+      "/EnableErrorReporting:{{ scom_omwebconsole_enable_error_reporting }}",
+      "/SendCEIPReports: {{ scom_omwebconsole_send_ceip_reports }}",
+      "/UseMicrosoftUpdate: {{ scom_omwebconsole_use_microsoft_update }}",
+      "/AcceptEndUserLicenseAgreement:1"
+    ) -NoNewWindow -Wait
+
+  vars:
+    ansible_become: true
+    ansible_become_method: runas
+    ansible_become_user: '{{ domain_fqdn }}\{{ domain_admin }}'
+    ansible_become_password: '{{ domain_admin_password }}'
+    ansible_become_flags: "logon_type=interactive logon_flags=with_profile"
+  args:
+    creates: "C:\\Program Files\\Microsoft System Center\\Operations Manager\\WebConsole\\WebLocalizationStrings.dll"
+
+- name: Check if Install was Successful
+  include_tasks: check_install.yml

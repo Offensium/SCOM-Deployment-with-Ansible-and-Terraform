@@ -1,0 +1,17 @@
+---
+- name: Enable update service
+  ansible.windows.win_service:
+    name: Windows Update
+    state: started
+    start_mode: auto
+
+- name: Install Windows Features
+  ansible.windows.win_feature:
+    name:
+      - RSAT-AD-PowerShell
+    state: present
+
+- name: Begin SQL Server Install
+  ansible.builtin.include_tasks:
+    file: config_sql.yml
+
