@@ -34,3 +34,8 @@ sudo ansible-playbook -i inventory.yml site.yml -vvv
 Now wait for a long time and keep an eye on the deployment for potential errors.
 
 Happy Researching!
+
+## Resources
+- https://specterops.io/blog/2025/12/10/scommand-and-conquer-attacking-system-center-operations-manager-part-1/
+- https://specterops.io/blog/2025/12/10/scommand-and-conquer-attacking-system-center-operations-manager-part-2/
+- https://specterops.io/blog/2025/12/09/git-scommit-putting-the-ops-in-opsmgr/
