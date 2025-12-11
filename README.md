@@ -1,5 +1,7 @@
 # SCOM Deployment with Ansible and Terraform
 
+![meme](https://github.com/user-attachments/assets/b1e30530-165e-4e71-9387-9cb3d71da022)
+
 First of all we would like to give full credits to the amazing team at SpecterOps and https://github.com/Synzack in specific. They did the heavy lifting of most of the Ansible modules.
 
 Since SpecterOps announced some amazing SCOM research with a Ludus lab, i wanted a way to deploy this without Ludus and integrate it in the deployment tools we already use. In this repository you can set SCOM easily up in all kinds of environments, we provided a Terraform file that deploys it into Azure for you but these Ansible files can be used stand alone as well to set it up in whatever environment you like.
